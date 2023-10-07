@@ -52,8 +52,19 @@ menuInicio: db 'Bienvenido al Juego de SUDOKU!', 10, 10, 'Seleccione una opcion:
 longMenu: equ $-menuInicio
 
 ;cada caracter del tablero es un byte, para recorrerlo hay que ir byte por byte
-tableroVacio: db '[ ] | [ ] | [ ]', 10, '[ ] | [5] | [ ]', 0xA, '[ ] | [ ] | [ ]', 0xA, 0
-longTableroV equ $-tableroVacio
+tablero0: db '[ ] | [ ] | [ ]', 10, '[ ] | [5] | [ ]', 0xA, '[ ] | [ ] | [ ]', 0xA, 0
+longTablero equ $-tablero0 ; en principio, las longitudes deberian ser iguales
+tablero1: db '[ ] | [9] | [ ]', 10, '[ ] | [5] | [ ]', 0xA, '[8] | [ ] | [6]', 0xA, 0
+tablero2: db '[4] | [9] | [2]', 10, '[3] | [5] | [7]', 0xA, '[8] | [1] | [6]', 0xA, 0
+tablero3: db '[4] | [9] | [2]', 10, '[3] | [5] | [7]', 0xA, '[8] | [1] | [6]', 0xA, 0
+tablero4: db '[2] | [9] | [4]', 10, '[7] | [5] | [3]', 0xA, '[6] | [1] | [8]', 0xA, 0
+tablero5: db '[2] | [9] | [4]', 10, '[7] | [5] | [3]', 0xA, '[6] | [1] | [8]', 0xA, 0
+tablero6: db '[2] | [9] | [4]', 10, '[7] | [5] | [3]', 0xA, '[6] | [1] | [8]', 0xA, 0
+tablero7: db '[6] | [1] | [8]', 10, '[7] | [5] | [3]', 0xA, '[2] | [9] | [4]', 0xA, 0
+tablero8: db '[6] | [1] | [8]', 10, '[7] | [5] | [3]', 0xA, '[2] | [9] | [4]', 0xA, 0
+tablero9: db '[6] | [1] | [8]', 10, '[7] | [5] | [3]', 0xA, '[2] | [9] | [4]', 0xA, 0
+;los numeros van: 1-7-14-30-43-59-72-85. Entre 30 y 43 está el 5.
+
 
 entradaEquivocada: db 'Entrada equivocada. Intente de nuevo!', 10, 10
 longEntEq equ $-entradaEquivocada
@@ -99,15 +110,17 @@ Inicio:
     cmp byte[entrada], '2'
     je cerrar_juego
 
-    imprimeEnPantalla entradaEquivocada, longEntEq
+    imprimeEnPantalla entradaEquivocada, longEntEq ; llega aquí si la entrada no era 1 ni 2
     jmp Inicio
 
 
 
 mostrar_tablero:
-    imprimeEnPantalla tableroVacio, longTableroV
-    jmp SALIR
+    imprimeEnPantalla tablero0, longTablero
+
     ; aqui habria que agregar la logica para procesar la entrada
+
+    jmp SALIR
 
 
 cerrar_juego:

@@ -34,6 +34,14 @@
                 int     0x80
         %endmacro
 
+        %macro leer1caracter 0
+                mov eax, sys_read
+                mov ebx, stdin
+                mov ecx, seleccion
+                mov edx, 1
+                int 0x80
+        %endmacro
+
 	;objetivo de la macro: abre un archivo para su posterior uso
 	;ejemplo de funcionamiento: abreArchivo variableEnMemoria
 	;ejemplo de uso:	    abreArchivo nombreArchivo
