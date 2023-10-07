@@ -1,0 +1,763 @@
+
+*********************************************************************************
++ Ensamblaje de instrucciones (uso de tablas, código objeto, operandos reg, mod y R/M, inmediatos, memoria, bits w s d c )
+
+
+El objetivo de ensamblar instrucciones es convertir código ensamblador a código máquina.  
+Usualmente esto lo realiza un programa (como el TASM que usamos nosotros), pero es importante aprender a realizarlo para tener un mayor entendimiento del porqué de varios detalles al programar en ensamblador. 
+
+Para ensamblar hay que contar con las tablas de ensamblaje y con los códigos de instrucciones.  Estos están en archivos que se publicaron previamente cuando vimos la materia.  Las tablas de ensamblaje las usamos para codificar los operandos de las instrucciones.
+
+El primer paso es localizar la instrucción a ensamblar en los códigos de las instrucciones.  Una vez localizada puede ser que haya más de un código objeto para esa instrucción.  Hay que seleccionar el correcto dependiendo de los modos de direccionamiento de los operandos de la instrucción.  Si hay más de una posibilidad se debe escoger la de menor cantidad de bytes por asuntos de eficiencia.
+
+Una vez seleccionada se debe calcular los bits de identificación, esto es los posibles bits w, d, s o c que se puedan tener.  Más adelante repasaremos cada uno.   Luego deben de codificarse los operandos que se tengan.  Para eso se puede contar con las tablas de registros para codificar registros con la particula reg o con la tabla de mod y R/M para codificar un acceso a memoria o el otro registro si la instrucción tenía dos accesos a registros.
+
+Los operandos inmediatos se deben almacenar en el campo de datos de la misma instrucción.  Recuerden que toda información que la instrucción muestra debe almacenarse de alguna forma al ensamblarla ya que el procesador no es psíquico.
+
+Hablemos un poco de los bits de identificación.  El primero de ellos es el bit w. Este sirve para indicar si el tamaño del dato que la instrucción trabaja es un byte o un word.  Claramente al ser una w si está en 1 es un word y en 0 un byte.  Pistas para saber el tamaño del dato que se procesa: El uso de un registro, el tamaño del registro es el del dato siempre que no esté entre corchetes porque eso sería para accesar memoria y no para almacenar el dato.  La otra pista es el uso de las directivas "byte ptr" o "word ptr" que fuerzan un acceso a memoria a usar un tamaño particular.
+
+El segundo bit es el bit d al que llamamos el bit del destino (suena como a película de fantasía : ).  El bit del destino nos permite distinguir cuando hay dos accesos a registros cual de ellos se almacenó con la particula reg y cuál con el mod y R/M.  Si d es igual a 1 se codifica con reg el opernado destino y si es 0 es el fuente, de allí el nombre del bit d.
+
+El bit S es el de signo se usa para indicar si hay que hacer una extención de signo cuando se almacena como inmediato un número negativo en solo 8 bits para ser procesado como de 16 bits.  En ese caso no se agregan ceros para agrandarlo sino que se debe agregar el bit de signo para que sea consistente el trabajo.
+
+Por último el bit C se utiliza en corrimientos y rotaciones para indicar si se hace un movimiento de 1 o de lo que está almacenado en el CL.  Al ser el bit C, claramente 1 significa el CL y 0 que es un movimiento de 1 (un poco confuso esto último, pero así es).
+
+Un detalle aparte son los saltos.  Cuando es un salto incondicional como un jmp o un call o similar solo se almacena la dirección a donde se quiere ir y listo, es muy simple.  Lo complejo es cuando se trata de un salto condicional, ya que el operando se almacena de forma relativa.
+
+Esto quiere decir que hay que calcular un valor que se le debe sumar al Program Counter (CS:IP) para llegar a donde se quiere ir. Es decir hay que calcular cuántos bytes gastan ensambladas las instrucciones que están entre el salto y la etiqueta a donde se quiere llegar.   Hay que tomar en cuenta que si es un salto hacía atrás el número a sumar debe ser negativo y hay que tomar en cuenta saltarse a sí mismo, ya que el program counter siempre apunta a la siguiente instrucción a ejecutar.
+
+Una vez que se obtiene la secuencia de bits completa se debe pasar a hexadecimal y completar el mapa de bytes.
+
+Acá hay dos ejemplos de ensamblaje.  El primero es uno que usualmente vemos en clases y el segundo es uno que no terminamos de hacer de forma precensial y les dejé de tarea moral.  En las instrucciones que había de tarea moral hay comentarios sobre como se resolvían.
+
+-------------------------------
+Primer ejemplo de ensamblaje:
+
+D segment
+    Z  dd 73h,62h,51h
+    X  db -2
+    Y  db "ALACARGA!"    
+D endS
+
+  ...
+xxx: not word ptr [bx+si]
+  div bl
+  dec X
+  jo zzz
+  loop xxx
+zzz: add ax, -7
+  or dx, cx
+  shr bx, cl  
+  ... 
+
+Mapa de bytes resultante:
+  
+  xxx                                 zzz
+  not   div   dec         jo    loop  add      or    shr
+  v     v     v           v     v     v        v     v
+  F7 10 F6 F3 FE 0E 0C 00 70 02 E2 F4 05 F9 FF 0B D1 D3 EB
+                                      ^  
+                                    CS:IP  
+
+NOT:
+xxx: not word ptr [bx+si]
+
+  | 1111011w | mod 010 r/m | disp-low | disp-hi |
+    
+    11110111   00 010 000 
+
+    F7 10
+
+DIV:
+  div bl
+
+ | 1111011w | mod 110 r/m | disp-low | disp-hi |
+
+   11110110 | 11 110 011
+
+   F6 F3
+
+DEC:
+  dec X
+ | 1111111w | mod 001 r/m | disp-low | disp-hi |
+
+   11111110   00  001 110           12 
+
+   FE 0E 0C 00
+
+JO:
+  jo zzz
+
+  01110000 | disp
+
+  70 02
+
+LOOP:
+  loop xxx
+
+  11100010 | disp              1100
+                           00001100
+              -12          11110011
+  11100010                 11110100
+  
+  E2 F4
+
+ADD:
+zzz: add ax, -7
+hacemos los dos posibles códigos objetos para seleccionar el más pequeño.
+
+  
+0000000000000111
+111111111111 1001
+             
+FFF9 
+
+| 0000010w |-- data -- | data if w=1 |
+  00000101  
+  
+  05 F9 FF 
+
+| 100000sw | mod 000 r/m | ---data --- | data if sw=01 | disp-low | disp-hi |
+
+  10000011   11  000 000     FF F9  
+
+  83 C0 F9 FF
+
+OR:
+  or dx, cx
+
+               cx  dx  cx 
+  | 000010dw | mod reg r/m | desp-low | desp-high |
+           
+    00001011   11  010 001 
+
+  0B D1
+
+SHR
+  shr bx, cl  
+ 
+  | 110100cw | mod 101 r/m | desp-low | desp-high | 
+
+    11010011   11 101 011
+
+  D3 EB
+
+----------------------------------------------------------------------
+Segundo ejemplo de ensamblaje:
+
+Datos segment
+
+   A dw 15 dup(-1,0,1)
+   B db "HOLA",0
+   C dw ?
+
+Datos endS
+
+...
+  div byte ptr [si+45h]
+zzz: cmp al, 'D'
+  jae xxx
+  shr al,cl
+  xor al,cl
+  loopz zzz
+xxx: add dx, -2
+  push C
+...
+
+Mapa de bytes obtenido:
+
+          zzz                           xxx
+ div      cmp   jae   shr   xor   loop  add      push
+ v        v     v     v     v     v     v        v
+ F6 74 45 3C 44 73 06 D2 E8 32 C1 E1 F6 83 C2 FE FF 36 5F 00
+                      ^
+                    CS:IP
+
+
+DIV:
+Div byte ptr [si+45h]
+
+
+ | 1111011 w | mod 110 r/m | desp-low | desp-high 
+
+   1111011 0    01 110 100   01000101       
+
+
+   1111 0110   0111 0100  0100 0101       
+   
+   F6 74 45
+
+CMP:
+zzz: cmp al, 'D'
+
+  | 0011110 w | -data- | data if w=1 |
+
+    0011110 0   01000100    
+
+    0011 1100   0100 0100    
+   
+    3C 44
+
+JAE:
+jae xxx
+
+ | 01110011 | disp |
+
+ 73 xx
+   
+ queda pendiente hasta que lleguemos ensamblando a la etiqueta xxx
+
+SHR:
+shr al,cl
+
+  | 110100 c w | mod 101 r/m | desp low | desp high| (if c=1, count in CL)
+   
+    110100 1 0   11  101 000   
+
+    1101 0010   1110 1000   
+    
+    D2 E8
+
+XOR:
+xor al,cl
+Se selecciona el primer código objeto al ser los operandos registro a registro.  En este caso codificamos el AL con reg y el CL con mod y r/m.
+
+| 001100 d w | mod reg r/m | desp-low | desp-high |
+
+  00110010     11 000 001
+ 
+  0011 0010  1100 0001
+
+  32 C1 
+
+LOOP:
+loopz zzz
+
+Se cuentan los bytes entre la posición actual del CS:IP que apunda al add y la etiqueta zzz.
+Esto nos da un total de -10 (menos diez) que se debe codificar en complemento a la base en 8 bits.
+
+1010        10 en binario
+00001010    se extiende a 8 bits
+11110101    se cambian unos por ceros y ceros por unos
+11110110    se le suma uno
+
+| 11100001 | -disp- |
+
+  11100001   11110110 
+
+  1110 0001   1111 0110 
+
+  E1 F6 
+
+ADD:
+xxx: add dx, -2
+Como ya llegamos a ensamblar el add, donde está la etiqueta xxx nos tenemos que regresar a completar el ensamblaje del jae que dejamos pendiente.  Nos da 6 bytes de distancia.  Ahora el add:
+
+Al ser una suma de un inmediato a un registro seleccionamos este código objeto.  El bit S se enciende al ser un número negativo que se puede almacenar en 8 bits y ser un procesamiento de palabra (w=1) El segundo byte de datos no se usará porque el -2 cabe en 8 bits y haremos extensión de signo.  Para almacenar el -2 se debe hacer en complemento a la base en 8 bits.
+
+| 100000 s w | mod 000 r/m | -data- | data if sw=01 |
+
+  100000 1 1   11 000 010    11111110
+
+  1000 0011  1100 0010  1111 1110
+
+  83 C2 FE
+
+PUSH:
+push C
+Se escoge el tercer modo de direccionamiento al ser acceso a memoria por una variable.
+En el mod y r/m escogemos el [desp] para almacenar el desplazamiento de la variable en el segmento de datos.
+Recuerden que es la cantidad de bytes que hay desde el inicio del segmento hasta esa variable.  En este caso hay 95 bytes que gastan A y B.  A son 15 duplicaciones de 3 datos almacenado cada uno como word (2x3x15=90) y B son 4 bytes del HOLA y uno del cero del asciiz.
+
+95 en binario en 16 bits: 00000000 01011111
+
+| 11111111 | mod 110 r/m | desp-low | desp-high
+
+ 11111111 00 110 110 01011111 00000000
+
+ 1111 1111 0011 0110 0101 1111 0000 0000
+
+ FF 36 5F 00 
+------------------------------------------------------------------------------
+Tercer ejemplo de ensamblaje:
+    zzz
+    add      mov   jmp      je           nop
+    v        v     v        v            v 
+    05 F3 FF 88 1C E9 xx xx 74 F6 XX     90
+                                  ^
+                                CS:IP
+PC: CS:IP 
+   
+    
+
+     ...
+zzz: add ax, -13
+     mov byte ptr [si], bl      
+     jmp xxx
+     je zzz
+
+xxx: nop                          ;  0E48:006A
+
+ 
+ADD:
+
+  | 0000010 w | -data- | data if w=1 |
+
+    0000010 1  11110011   11111111
+ 
+    05 F3 FF
+
+
+  -13
+
+  1101
+  0000000000001101
+  1111111111110010
+  +              1
+  11111111 11110011
+
+MOV:
+   | 100010 d w | mod reg r/m | desp-low | desp-high |
+
+     100010 0 0 | 00 011 100 |  
+
+     88 1C
+     
+JMP:
+  | 11101001 | desp-low | desp-high
+    
+    E9 xx xx
+
+JE:
+    | 01110100 | -disp- |
+       
+       74 xx   
+
+  -10
+   1010
+   00001010
+   11110101
+   +      1
+   11110110
+   F6
+
+-----------------------------------------------------------------
+Cuarto ejemplo de ensamblaje:
+
+  datos
+    v
+    90 00 00 00 01 4B 01 4B 01 4B 01 4B 01 4B 01 4B FC FF 44 75 64 61 73 
+    ^           ^                                   ^     ^ 
+    B           C                                   A     D
+   00h         04h                                 10h   12h
+
+    -4    2 bytes
+
+     100
+     00000000 00000100
+     11111111 11111011
+     +               1
+     11111111 11111100
+     FF FC
+     FC FF
+      
+     ...
+
+    zzz                        xxx  
+    inc   inc jg   xor   shr   mov          je   jmp   nops 
+     v     v  v     v     v     v           v     v     v
+     FE C1 41 7F 04 33 C2 D2 EE 8B 0E 10 00 74 F1 EB 05 90 90 90 90
+                                                  ^
+                                                CS:IP
+
+
+  PC o Program Counter
+x86: CS:IP
+
+datos segment
+   B dd 90h 
+   C db 3 dup(2 dup (1,'K'))
+   A dw -4
+   D db "Dudas"       
+datos endS
+
+      ...  
+ zzz: inc cl
+      inc cx
+      jg xxx
+      xor ax, dx
+      shr dh, cl
+ xxx: mov cx, A
+      je zzz  
+      jmp www
+      ...
+----
+ zzz: inc cl
+
+     | 1111111 w | mod 000 r/m | desp-low | desp-high |
+     
+       1111111 0   11 000 001 
+
+       1111 1110 1100 0001 
+  
+       FE C1
+     
+----
+   inc cx
+
+   | 01000 reg |
+     01000 001
+
+     41
+----
+   jg xxx
+
+   | 01111111 | -disp- |
+     
+       7F   
+----
+   xor ax, dx
+
+   | 001100 d w | mod reg r/m | desp-low | desp-high |
+
+     001100 0 1   11  010  000
+                  ax  dx   ax 
+      31 D0
+
+     001100 1 1   11  000  010
+                  dx  ax   dx 
+      33 C2
+----
+   shr dh, cl
+
+   | 110100 c w | mod 101 r/m | desp-low | desp-high |     if c=1; count is in CL 
+ 
+     110100 1 0   11 101 110
+
+     1101 0010  1110 1110
+     
+     D2 EE 
+----
+ xxx: mov cx, A
+
+    | 100010 d w | mod reg r/m | desp-low | desp-high |
+      100010 1 1   00  001 110         0010h 
+     
+      1000 1011   0000 1110
+      8B 0E 10 00  
+----
+  je zzz  
+
+  | 01110100 | -disp- |
+                -15 bytes   
+  74 F1 
+
+  1111
+  00001111
+  11110000 
+  +      1
+  11110001
+  F1 
+   
+----
+  jmp www
+
+ Direct within seg short: | 11101011 | -desp- |
+  
+                          | 11101011 | 00000101 |
+
+  EB 05
+
+
+
+*********************************************************************
++ Desensamblaje de instrucciones (índice inverso y códigos no utilizados)
+
+Desensamblar consiste en tomar una serie de bytes y suponer que hay instrucciones de código máquina almacenados en ellos y traducirlos a lenguaje ensambador.  Es ilegal hacerlo en código que tenga derechos de autor para protejer de la piratería a sus autores.
+
+El detalle está en que el capítulo 28 del Abel y sus versiones mini están ordenados por instrucción y recorrer todo el capítulo viendo que instrucción comimenza con una combinación de un byte particular no es algo razonable.  
+
+A travez de algunos semestres generaciones de valientes estudiantes ganaron algo de puntos extras realizando este trabajo de hormiga y creando un índice de instrucciones que esté ordenado por byte y no por código de instrucción.  A este índice le llamamos el índice inverso. De los publicados a mi me gusta más el que se llama Oro.
+
+Dos detalles a tomar en cuenta.  Existen instrucciones que comienzan con el mismo byte, estas en el índice están agrupadas en cluster que se llaman Gx.  ¿Cómo distingo cuál es? con el segundo byte de la instrucción.  
+
+El otro detalle es que no todos los números entre 00 y FF son un posible inicio de instrucción y si yo trato de ejecutarlos el procesador me va a dar un error superconocido para ustedes: "ilegal instruction".
+
+Desensamblar entonces es sencillo, es solo ir convirtiendo a unos y ceros los códigos que vienen y ver que valores tienen los campos usados para ensamblar los operandos.
+
+Por supuesto deben recordar que al haberse ensamblado no se almacenaron ni los nombres de las etiquetas ni los de las variables.  Es como cuando el TD (debugger) abre un exe que no tiene almacenados los nombres en tablas adicionales y lo desensambla así en crudo. 
+
+Para practicar pueden generar una serie de bytes aleatorios y ver que les sale, aunque se corren el riesgo de una instrucción ilegal, pero es un ejercicio divertido.
+
+
+Ejemplo:
+  nop         loop  pop jcxz  add   
+  v           v     v   v     v     v
+  90 90 90 90 E2 46 5F  E3 F7 02 3D 9A C5 00 EF 08
+                              ^  
+
+ Al inicio hay cuatro 90 que son cuatro nop. 
+
+ Buscamos el E2 en el Indice inverso y encontramos que es el Loop.
+ Buscamos el Loop en el diccionario de instrucciones y vemos que tiene solo un formato:
+ 
+ | 11100010 | -disp- |
+  
+ el 46 sería entonces el desplazamiento.  
+
+ El 5F nos dice el indice inverso que es una instrucción POP.
+ Lo buscamos en el diccionario y tenemos tres opciones de código objeto (máquina)
+
+  Register: | 01011 reg |
+  Segment reg: | 00 sg 111 | (sg= segment reg)
+  Reg/memory: | 10001111 | mod 000 r/m | desp-low | desp-high
+
+  debemos seleccionar la indicada decodificando los bits:
+
+  5F en binario es
+
+  01011 111
+     
+  Comparando el inicio se ve claramente que es el primer formato y que es 
+  un pop de un registro.  El código de reg es de 3 bits que en nuestro ejemplo
+  es un 111.  Se revisa la tabla de registros y se ve que el código 111 referencia al
+  registro di.  Estamos seguros que es el di y no el bh porque la pila solo trabaja con words.
+
+  | 01011 reg |
+
+  La instrucción entonces sería:
+
+  Pop Di
+
+  Seguimos con el E3 que es el código de JCXZ.  Este tiene solo un formato por ser 
+  un salto condicional: 
+
+  | 11100011 | -disp- |
+
+  El desplazamiento sería el byte F7 que es un número negativo lo que implica un salto 
+  hacía direcciones menores (hacia atrás)
+
+  F7 está en complemento a la base y se debe traducir a binario
+
+  11110111
+  11110110  se le resta uno
+  00001001  se cambian ceros por unos y viceversa
+  9         llegamos a un 9.
+
+  F7 es un -9 en decimal.
+  Esto significa que estamos saltando 9 bytes hacía atrás a partir de donde está el Program Counter
+  al ejecutar el JCXZ. En este caso apuntando al byte 02.  Esto nos lleva al inicio del primer nop 
+  de los cuatro que pusimos antes del loop.
+  
+  El 02 sería el inicio de un add lo buscamos en el diccionario y encontramos tres formatos>
+
+  Reg/mem with register: | 000000dw | mod reg r/m | desp-low | desp-high |
+  Immed to accumulator: | 0000010 w | -data- | data if w=1 |
+  Immed to reg/mem: | 100000sw | mod000r/m | -data- | data if sw=01
+
+  02 3D
+
+  00000010 00111101
+
+| 000000dw | mod reg r/m | desp-low | desp-high |
+        10   00  111 101
+
+  El operando de memoria esta con mod=00 y r/m=101 lo que apunta a que es [di]
+
+  el operando reg es 111 que en la tabla es el bh porque el w es 0
+
+  La instrucción sería entonces:
+
+  add bh, byte ptr [di]
+
+  Luego del add viene 9A C5 00 EF 08
+
+  9A es un byte que nos referencia al call
+
+Direct within segment: | 11101000 | desp-low | desp-high |
+Indirect within segment: | 11111111 | mod010r/m | | desp-low | desp-high |
+Indirect intersegment: | 11111111 | mod011r/m | | desp-low | desp-high |
+Direct intersegment: | 10011010 | desp-low | desp-high | seg-low | seg-high
+
+  9A
+  10011010
+
+Corresponde a un salto directo intersegmento, es decir se almacenó tanto el segmento como el desplazamiento de forma directa por corresponder a una etiqueta que estaba fuera del segmento.
+
+  call lejos
+
+lejos representa la etiqueta que está en la instrucción en la dirección: 08EF:00C5
+Es una instrucción de 5 bytes y solo hace falta ordenar la dirección. 
+
+
+El trozo de código que desensamblamos quedaría entonces como:
+
+zzz: nop
+  nop
+  nop
+  nop 
+  loop xxx
+  Pop Di
+  JCXZ zzz
+  add bh, byte ptr [di]
+  call lejos  ;  lejos está en la dirección 08EF:00C5
+ 
+
+  ... a 46 bytes del loop
+xxx:
+ 
+---------------------------------------------------------------------
+Un segundo ejemplo:
+
+nop nop adc         loopz shl
+v   v   v           v     v
+90  90  10 8F 2C 01 E1 17 D3 E3 F3 AF E3 F4 F7 FB 33 08 
+                                ^            
+                              cs:ip           
+                                       xxx:
+                                       v
+F3 A4 74 00 E2 F0 FB 70 04 F3 A6 73 EF FE C1 90 90 90
+
+El programa desensamblado quedaría como:
+
+    nop
+    nop
+    adc byte ptr [bx + 012Ch], cl
+    loopz xxx
+    shl bx, cl
+
+
+xxx:
+
+
+
+ADC:
+
+  10 8F 2C 01
+
+  00010000 10001111
+
+  Reg/mem with register: | 000100 d w | mod reg r/m | desp-low | desp-high |
+
+           0 0   10  001 111
+  | 000100 d w | mod reg r/m | desp-low | desp-high |
+                     cl  [bx+d16]
+
+  adc byte ptr [bx + 012Ch], cl
+
+
+LOOPZ:
+
+   Se cuentan los bytes que se le suma al CS:IP para ver donde queda la etiqueta a la que va.
+   Nos inventamos un nombre de etiqueta, en este caso xxx:
+   El desplazamiento son 17 bytes que hay que recordar es en hexadecimal.
+
+
+SHL:
+
+   D3 E3
+            mod     r/m
+   11010011 11  100 011 
+
+SHL: | 110100 c w | mod 100 r/m | if c=0; count=1 | desp-low | desp-high
+
+       110100 1 1   11  100 011 
+                            BX
+
+      shl bx, cl 
+                   
+*********************************************************************************
++ Bifurcaciones (saltos, procedimientos e interrupciones)
+
+¿Qué es una bifurcación?
+
+Es un desvío en el camino que nos da en total dos posibilidades, seguir por donde se iba o ir por el desvío.
+Esto aplica tanto no computacionalmente como computacionalmente.
+
+Las bifurcaciones en ensamblador son aquellas instrucciones que me permiten controlar el flujo de ejecución de un programa.
+
+Las podemos dividir en tres categorías:
+1. Saltos
+2. Rutinas
+3. Interrupciones
+
++++++
+1. Saltos
+
+Un salto es una bifurcación que no espera regrese el flujo nunca.  Se va bifurca y que le vaya bien. Lo que en un tiquete aereo llaman "one way ticket".
+Usualmente al programador en ensamblador se le deja solo indicar con una etiqueta o variable el destino de adonde quiere saltar, pero internamente es un poco más complicado que eso.
+
+Se dividen en 3 clasificaciones independientes:
+ - condicionales e incondicionales
+ - directos e indirectos
+ - intrasegment e intersegment     (también conocidos como near y far)
+
+Veamos el primero.  Un salto condicional requiere de tomar una decisión para saber si bifurca o no.  Uno incondicional bifurca siempre sin importar ninguna condición.  Típicamente las condiciones que se verifican son el estado de alguna o algunas banderas o el valor del cx.
+
+Un salto directo tiene almacenada la dirección a la que tiene que ir, no tiene que buscarla.  Uno indirecto primero tiene que buscar la dirección y luego bifurcar a ella.  Los primeros son los más comunes, por ejemplo los que tienen una etiqueta para saltar. Los segundos casi no se usan, por ejemplo saltar a una variable, salta al contenido de la variable no a la ubicación de esta, por eso es indirecto.
+
+La tercer clasificación distingue si un salto es dentro del mismo segmento, un salto cercano (near) o si es un salto a otro segmento, un salto lejano (far).  Se llama intrasegment, dentro del mismo segmento o intersegment si es a otro segmento (piensen en vuelos locales o internacionales como analogía). Los saltos near solo ocupan almacenar el desplazamiento ya que no cambia el segmento.  Los saltos far necesitan almacenar tanto el desplazamiento como el segmento.  Por esto direcciones near gastan 2 bytes y las far gastan 4 bytes.
+
+Es importante recordar que los saltos condicionales tienen límite de distancia.  Para efectos prácticos si uno coloca muchas instrucciones entre un salto condicional y su etiqueta el salto quedará fuera de rango.  Para soslayar ese problema se utiliza lo que llamamos un salto de conejo.  El límite para los saltos condicionales es de 128 bytes.
+
+Salto de conejo:
+Un salto pequeño que me permite tomar impulso para hacer un salto grande.  
+Por ejemplo:
+
+jz xxx
+...
++128 bytes
+...
+xxx: 
+
+Se le da vuelta al salto y se usa algunos elementos auxiliares.  Se convierte en:
+
+jnz aux
+jmp xxx
+aux: 
+...
+xxx:
+
++++++
+2. Rutinas
+
+Una rutina es una porción de código que se espera se encesite ejecutar varias veces.  Se agrupa en una rutina para poder ejecutarla varias veces sin tener que duplicarla.
+
+En ASM las rutinas se deben implementar con las herramientas que se tienen a dispocisión
+
+La directiva proc sirve para abrir la descripción de una rutina.  Esta se debe terminar con la directiva endP. Antes de ambas directivas se debe poner el nombre de la rutina.   Estas dos directivas deben coincidir con ese nombre.  Es importante recordar que le endP no finaliza la ejecución de la rutina.  Para eso es necesario usar explícitamente la instrucción ret.
+
+Para invocar a una rutina se usa la instrucción call.
+Lo que hace a una rutina ser una rutina es el regresar.  Si no regresa es un salto.  Por lo anterior la diferencia entre un call y un jmp es que el call guarda en la pila la dirección de retorno. 
+
+
+El manejo de parámetros no se hace de forma automática.  Es responsabilidad del programador el diseñarlos e implementarlos.
+
+Recuerden que los parámetros formales son los que se usan en la declaración de una rutina y los reales son con los que se invoca.
+
+En Lenguajes de Alto nivel los parámetros se pueden categorizar en    
+- Valor                  int x
+- Referencia             int &x
+- Nombre                 #define 
+
+Es responsabilidad del programador que se comporten como se necesita.
+
+En bajo nivel en ensamblador el paso de parámetros se implementa de alguna de las tres formas siguientes:
+- registros
+- variables del data segment
+- por la pila  
+
+La que usan los lenguajes es la tercera ya que esa permite la implementación de recursividad.  La materia de recursividad le dedicaremos un buen tiempo después.  
+
+Por el momento suponemos que pueden usar las dos primeras para sus tareas y ejercicios.
+
+
+++++
+3. Interrupciones:
+
+La principal diferencia entre una llamada a una rutina far y una llamada a una interrupción es que la llamada a la interrupción adicionalmente almacena las banderas.  Por esta razón no se regresa con ret sino con iret.
+
+En este curso en principio no programaremos interrupciones, solo usaremos las del bios o las del Sistema Operativo.
+Recuerden que las que son de la 20h hacía abajo son del bios y de la 21h para arriba del SO.
+
+Bandera de IF     sti  cli
