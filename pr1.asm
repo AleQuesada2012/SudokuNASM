@@ -91,8 +91,8 @@ longDespedida equ $-despedida
 ;dbg_msg3: db 'entrada a salir del juego alcanzada', 0
 ;longmsg3 equ $-dbg_msg3
 
-;mensaje: db 'Inserte un número: ', 0, 0
-;longitud equ $-mensaje
+mensaje: db 'Inserte un número (1 a 9): ', 0, 0
+longitud equ $-mensaje
 
 section .text
 
@@ -116,6 +116,9 @@ Inicio:
 
 
 mostrar_tablero:
+    imprimeEnPantalla mensaje, longitud
+    leeTeclado ; en caso de que uno quiera pedirle manualmente el tablero que quiere usar
+
     imprimeEnPantalla tablero0, longTablero
 
     ; aqui habria que agregar la logica para procesar la entrada
