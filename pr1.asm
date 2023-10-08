@@ -249,51 +249,51 @@ cordenada_0:
     cmp byte[coord2], '0'
     mov eax, '1'    
     ;imprimeEnPantalla mensajeDebug, longitudDebug   ; para debuguear lol
-    capturaNumero coordLista
+    mov [coordLista], eax
     jmp Valida_Valor               ;   AQUI OCUPO FUNCION PARA CABIAR EL NUMERO, VALIDAR SI HAY O NO NUMERO Y ETC
 
     cmp byte[coord2], '1'
     mov eax, '7'    
-    capturaNumero coordLista
+    mov [coordLista], eax
     jmp Valida_Valor
 
     cmp byte[coord2], '2'
     mov eax, '13'    
-    capturaNumero coordLista
+    mov [coordLista], eax
     jmp Valida_Valor
 
 cordenada_1:
     
     cmp byte[coord2], '0'
     mov eax, '13'    
-    capturaNumero coordLista
+    mov [coordLista], eax
     jmp Valida_Valor
 
     cmp byte[coord2], '1'
     mov eax, '13'    
-    capturaNumero coordLista
+    mov [coordLista], eax
     jmp Valida_Valor
 
     cmp byte[coord2], '2'
     mov eax, '13'    
-    capturaNumero coordLista
+    mov [coordLista], eax
     jmp Valida_Valor
 
 cordenada_2:  
 
     cmp byte[coord2], '0'
     mov eax, '13'    
-    capturaNumero coordLista
+    mov [coordLista], eax
     jmp Valida_Valor
 
     cmp byte[coord2], '1'
     mov eax, '13'    
-    capturaNumero coordLista
+    mov [coordLista], eax
     jmp Valida_Valor
 
     cmp byte[coord2], '2'
     mov eax, '13'    
-    capturaNumero coordLista
+    mov [coordLista], eax
     jmp Valida_Valor
 
 
@@ -311,10 +311,10 @@ Valida_Valor:
         jmp Valida_Valor
 
 REEMPLACE:
-        cmp byte[ecx], 0     ; aqui se intercambia la casilla por el numero
-        imprimeEnPantalla  noValidCoord, longnoValidCoord;OTRA FUNCION O SALGO DEL PROGRAMA
-        jne Pedir_Coordenadas
-        mov byte[ecx], 'A'
+        mov byte[ecx],'A'
+        ;cmp byte[ecx], 0     ; aqui se intercambia la casilla por el numero
+        imprimeEnPantalla  tablero1, longTablero;OTRA FUNCION O SALGO DEL PROGRAMA
+        jmp SALIR
 
 
 
