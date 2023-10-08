@@ -249,68 +249,66 @@ cordenada_0:
     cmp byte[coord2], '0'
     mov eax, '1'    
     ;imprimeEnPantalla mensajeDebug, longitudDebug   ; para debuguear lol
-    mov [coordLista], eax
+    ;mov [coordLista], eax
+    capturaNumero coordLista2
     jmp Valida_Valor               ;   AQUI OCUPO FUNCION PARA CABIAR EL NUMERO, VALIDAR SI HAY O NO NUMERO Y ETC
 
     cmp byte[coord2], '1'
     mov eax, '7'    
-    mov [coordLista], eax
+    ;mov [coordLista], eax
+    capturaNumero coordLista2
     jmp Valida_Valor
 
     cmp byte[coord2], '2'
     mov eax, '13'    
-    mov [coordLista], eax
+    ;mov [coordLista], eax
+    capturaNumero coordLista2
     jmp Valida_Valor
 
 cordenada_1:
     
     cmp byte[coord2], '0'
-    mov eax, '13'    
-    mov [coordLista], eax
+    mov eax, '17'    
+    ;mov [coordLista], eax
+    capturaNumero coordLista2
     jmp Valida_Valor
 
     cmp byte[coord2], '1'
-    mov eax, '13'    
-    mov [coordLista], eax
+    mov eax, '23'    
+    ;mov [coordLista], eax
+    capturaNumero coordLista2
     jmp Valida_Valor
 
     cmp byte[coord2], '2'
-    mov eax, '13'    
+    ;mov eax, '29'    
     mov [coordLista], eax
+    capturaNumero coordLista2
     jmp Valida_Valor
 
 cordenada_2:  
 
     cmp byte[coord2], '0'
-    mov eax, '13'    
-    mov [coordLista], eax
+    mov eax, '33'    
+    ;mov [coordLista], eax
+    capturaNumero coordLista2
     jmp Valida_Valor
 
     cmp byte[coord2], '1'
-    mov eax, '13'    
-    mov [coordLista], eax
+    mov eax, '39'    
+    ;mov [coordLista], eax
+    capturaNumero coordLista2
     jmp Valida_Valor
 
     cmp byte[coord2], '2'
-    mov eax, '13'    
-    mov [coordLista], eax
+    mov eax, '45'    
+    ;mov [coordLista], eax
+    capturaNumero coordLista2
     jmp Valida_Valor
 
 
 Valida_Valor:
+        ;add ecx, coordLista2
 
-        cmp ecx, coordLista
-        je REEMPLACE
-
-        mov eax,4
-        mov ebx,1
-        mov edx,1
-        int 80h
-
-        inc ecx
-        jmp Valida_Valor
-
-REEMPLACE:
         mov byte[ecx],'A'
         ;cmp byte[ecx], 0     ; aqui se intercambia la casilla por el numero
         imprimeEnPantalla  tablero1, longTablero;OTRA FUNCION O SALGO DEL PROGRAMA
