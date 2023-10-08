@@ -34,6 +34,7 @@ section .bss
     entrada: resb 1     ; digito de entrada
     coord1: resb 1      ; posicion x
     coord2: resb 1      ; posicion y
+    numCasilla: resb 1  ; numero a guardar en la casilla
 
 section .data ; segmento de datos y variables
 
@@ -55,15 +56,16 @@ longMenu: equ $-menuInicio
 tablero0: db '[ ] | [ ] | [ ]', 10, '[ ] | [5] | [ ]', 0xA, '[ ] | [ ] | [ ]', 0xA, 0
 longTablero equ $-tablero0 ; en principio, las longitudes deberian ser iguales
 tablero1: db '[ ] | [9] | [ ]', 10, '[ ] | [5] | [ ]', 0xA, '[8] | [ ] | [6]', 0xA, 0
-tablero2: db '[4] | [9] | [2]', 10, '[3] | [5] | [7]', 0xA, '[8] | [1] | [6]', 0xA, 0
-tablero3: db '[4] | [9] | [2]', 10, '[3] | [5] | [7]', 0xA, '[8] | [1] | [6]', 0xA, 0
-tablero4: db '[2] | [9] | [4]', 10, '[7] | [5] | [3]', 0xA, '[6] | [1] | [8]', 0xA, 0
-tablero5: db '[2] | [9] | [4]', 10, '[7] | [5] | [3]', 0xA, '[6] | [1] | [8]', 0xA, 0
-tablero6: db '[2] | [9] | [4]', 10, '[7] | [5] | [3]', 0xA, '[6] | [1] | [8]', 0xA, 0
-tablero7: db '[6] | [1] | [8]', 10, '[7] | [5] | [3]', 0xA, '[2] | [9] | [4]', 0xA, 0
-tablero8: db '[6] | [1] | [8]', 10, '[7] | [5] | [3]', 0xA, '[2] | [9] | [4]', 0xA, 0
-tablero9: db '[6] | [1] | [8]', 10, '[7] | [5] | [3]', 0xA, '[2] | [9] | [4]', 0xA, 0
+tablero2: db '[4] | [ ] | [2]', 10, '[ ] | [5] | [ ]', 0xA, '[8] | [ ] | [ ]', 0xA, 0
+tablero3: db '[4] | [ ] | [ ]', 10, '[3] | [5] | [ ]', 0xA, '[ ] | [1] | [6]', 0xA, 0
+tablero4: db '[ ] | [9] | [ ]', 10, '[ ] | [5] | [3]', 0xA, '[6] | [ ] | [ ]', 0xA, 0
+tablero5: db '[2] | [ ] | [4]', 10, '[ ] | [5] | [ ]', 0xA, '[ ] | [1] | [ ]', 0xA, 0
+tablero6: db '[ ] | [ ] | [ ]', 10, '[7] | [5] | [ ]', 0xA, '[ ] | [ ] | [8]', 0xA, 0
+tablero7: db '[ ] | [1] | [ ]', 10, '[ ] | [5] | [3]', 0xA, '[ ] | [9] | [ ]', 0xA, 0
+tablero8: db '[6] | [ ] | [ ]', 10, '[ ] | [5] | [3]', 0xA, '[2] | [ ] | [ ]', 0xA, 0
+tablero9: db '[ ] | [ ] | [ ]', 10, '[7] | [5] | [ ]', 0xA, '[ ] | [ ] | [4]', 0xA, 0
 ;los numeros van: 1-7-14-30-43-59-72-85. Entre 30 y 43 está el 5.
+; aqui ya se supone que estan los tableros
 
 
 entradaEquivocada: db 'Entrada equivocada. Intente de nuevo!', 10, 10
@@ -91,8 +93,12 @@ longDespedida equ $-despedida
 ;dbg_msg3: db 'entrada a salir del juego alcanzada', 0
 ;longmsg3 equ $-dbg_msg3
 
-mensaje: db 'Inserte un número (1 a 9): ', 0, 0
-longitud equ $-mensaje
+mensajeTablero: db 'Inserte un número (1 a 9): ', 0, 0
+longitud equ $-mensajeTablero
+
+
+mensajeCoordenadas: db 'Inserte las coordenadas y el correspondiente número a agregar: ',0,0
+longitudCoordenadas equ $-mensajeCoordenadas
 
 section .text
 
@@ -116,14 +122,88 @@ Inicio:
 
 
 mostrar_tablero:
-    imprimeEnPantalla mensaje, longitud
+    imprimeEnPantalla mensajeTablero, longitud
     leeTeclado ; en caso de que uno quiera pedirle manualmente el tablero que quiere usar
-
-    imprimeEnPantalla tablero0, longTablero
+    ; AQUI VOY A EMPEZAR A COMPARAR LOS TABLEROS
+    cmp byte [entrada], '1'
+    je TABLEROUNO ;imprimeEnPantalla tablero0, longTablero
+    cmp byte [entrada], '2'
+    je TABLERODOS
+    cmp byte [entrada], '3'
+    je TABLEROUNOTRES
+    cmp byte [entrada], '4'
+    je TABLEROCUATRO
+    cmp byte [entrada], '5'
+    je TABLEROCINCO
+    cmp byte [entrada], '6'
+    je TABLEROSEIS
+    cmp byte [entrada], '7'
+    je TABLEROSIETE
+    cmp byte [entrada], '8'
+    je TABLEROOCHO
+    cmp byte [entrada], '9'
+    je TABLERONUEVE
 
     ; aqui habria que agregar la logica para procesar la entrada
 
     jmp SALIR
+
+
+TABLEROUNO: ;imprimeEnPantalla tablero0, longTablero
+    imprimeEnPantalla tablero1, longTablero
+    jmp Pedir_Coordenadas
+TABLERODOS:
+    imprimeEnPantalla tablero2, longTablero
+    jmp Pedir_Coordenadas
+TABLEROUNOTRES:
+    imprimeEnPantalla tablero3, longTablero
+    jmp Pedir_Coordenadas
+TABLEROCUATRO:
+    imprimeEnPantalla tablero4, longTablero
+    jmp Pedir_Coordenadas
+TABLEROCINCO:
+    imprimeEnPantalla tablero5, longTablero
+    jmp Pedir_Coordenadas
+TABLEROSEIS:
+    imprimeEnPantalla tablero6, longTablero
+    jmp Pedir_Coordenadas
+TABLEROSIETE:
+    imprimeEnPantalla tablero7, longTablero
+    jmp Pedir_Coordenadas
+TABLEROOCHO:
+    imprimeEnPantalla tablero8, longTablero
+    jmp Pedir_Coordenadas
+TABLERONUEVE:
+    imprimeEnPantalla tablero9, longTablero
+    jmp Pedir_Coordenadas
+
+
+
+; AQUI VOY A HACER OTRA FUNCION PARA AGARRAR LAS CASILLAS DEL INPUT
+
+
+Pedir_Coordenadas:
+
+    imprimeEnPantalla mensajeCoordenadas, longitudCoordenadas
+
+    leeTeclado
+    mov eax, [entrada]
+    mov [coord1], eax       ;aqui se almacena la coordenada 1
+
+    leeTeclado
+    mov eax, [entrada]
+    mov [coord2], eax       ;aqui se almacena la coordenada 2
+
+    leeTeclado
+    mov eax, [entrada]
+    mov [numCasilla], eax   ;aqui se almacena el numero de la casilla que corresponde a las coordenadas
+
+    jmp Valida_Coordenadas
+
+Valida_Coordenadas:
+    
+
+    
 
 
 cerrar_juego:
