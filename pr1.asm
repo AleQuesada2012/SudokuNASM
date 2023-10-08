@@ -30,11 +30,38 @@
         %endmacro
 
 
+
+        %macro lee3Teclado 0
+                mov     eax,     sys_read      ; opción 3 de las interrupciones del kernel.
+                mov     ebx,     stdin         ; standar input.
+                mov     ecx,     coord1       ; dirección de memoria reservada para almacenar la entrada del teclado.
+                mov     edx,     8   
+
+                mov     eax,     sys_read      ; opción 3 de las interrupciones del kernel.
+                mov     ebx,     stdin         ; standar input.
+                mov     ecx,     coord2       ; dirección de memoria reservada para almacenar la entrada del teclado.
+                mov     edx,     8   
+                mov     eax,     sys_read      ; opción 3 de las interrupciones del kernel.
+                mov     ebx,     stdin         ; standar input.
+                mov     ecx,     numCasilla       ; dirección de memoria reservada para almacenar la entrada del teclado.
+                mov     edx,     8   
+                int     0x80
+        %endmacro
+
+
+
+%macro capturaNumero 1
+                mov     eax, [coordLista]         ; pasa el contenido en la variable de memoria "entrada" y la transfiere al registro eax quitando la parte ASCII
+                sub     eax, 48                ; realiza la resta eax - 48 , la idea es obtener el valor numerico del valor de entrada y no su correspondiente ASCII
+                mov     [%1], eax              ; transfiere el contenido del registro eax hacia el contenido de la variable de memoria ingresada en el parametro uno 
+        %endmacro
+
 section .bss
     entrada: resb 1     ; digito de entrada
     coord1: resb 1      ; posicion x
     coord2: resb 1      ; posicion y
     numCasilla: resb 1  ; numero a guardar en la casilla
+    coordLista: resb 1  ; coordenada de casilla en el tablero
 
 section .data ; segmento de datos y variables
 
@@ -64,7 +91,7 @@ tablero6: db '[ ] | [ ] | [ ]', 10, '[7] | [5] | [ ]', 0xA, '[ ] | [ ] | [8]', 0
 tablero7: db '[ ] | [1] | [ ]', 10, '[ ] | [5] | [3]', 0xA, '[ ] | [9] | [ ]', 0xA, 0
 tablero8: db '[6] | [ ] | [ ]', 10, '[ ] | [5] | [3]', 0xA, '[2] | [ ] | [ ]', 0xA, 0
 tablero9: db '[ ] | [ ] | [ ]', 10, '[7] | [5] | [ ]', 0xA, '[ ] | [ ] | [4]', 0xA, 0
-;los numeros van: 1-7-14-30-43-59-72-85. Entre 30 y 43 está el 5.
+;los numeros van: 1-7-13-30-43-59-72-85. Entre 30 y 43 está el 5.
 ; aqui ya se supone que estan los tableros
 
 
@@ -80,6 +107,10 @@ longEntEq equ $-entradaEquivocada
 
 despedida: db 'Gracias por jugar!', 10
 longDespedida equ $-despedida
+
+
+noValidCoord: db 'Casilla no vacía, intente de nuevo', 10
+longnoValidCoord equ $-noValidCoord
 
 
 
@@ -99,6 +130,9 @@ longitud equ $-mensajeTablero
 
 mensajeCoordenadas: db 'Inserte las coordenadas y el correspondiente número a agregar: ',0,0
 longitudCoordenadas equ $-mensajeCoordenadas
+
+mensajeDebug: db 'voy por aqui :)', 0, 0
+longitudDebug equ $-mensajeDebug
 
 section .text
 
@@ -151,30 +185,39 @@ mostrar_tablero:
 
 TABLEROUNO: ;imprimeEnPantalla tablero0, longTablero
     imprimeEnPantalla tablero1, longTablero
+    mov ecx, tablero1
     jmp Pedir_Coordenadas
 TABLERODOS:
     imprimeEnPantalla tablero2, longTablero
+    mov ecx, tablero2
     jmp Pedir_Coordenadas
 TABLEROUNOTRES:
     imprimeEnPantalla tablero3, longTablero
+    mov ecx, tablero3
     jmp Pedir_Coordenadas
 TABLEROCUATRO:
     imprimeEnPantalla tablero4, longTablero
+    mov ecx, tablero4
     jmp Pedir_Coordenadas
 TABLEROCINCO:
     imprimeEnPantalla tablero5, longTablero
+    mov ecx, tablero5
     jmp Pedir_Coordenadas
 TABLEROSEIS:
     imprimeEnPantalla tablero6, longTablero
+    mov ecx, tablero6
     jmp Pedir_Coordenadas
 TABLEROSIETE:
     imprimeEnPantalla tablero7, longTablero
+    mov ecx, tablero6
     jmp Pedir_Coordenadas
 TABLEROOCHO:
     imprimeEnPantalla tablero8, longTablero
+    mov ecx, tablero8
     jmp Pedir_Coordenadas
 TABLERONUEVE:
     imprimeEnPantalla tablero9, longTablero
+    mov ecx, tablero9
     jmp Pedir_Coordenadas
 
 
@@ -182,26 +225,104 @@ TABLERONUEVE:
 ; AQUI VOY A HACER OTRA FUNCION PARA AGARRAR LAS CASILLAS DEL INPUT
 
 
-Pedir_Coordenadas:
+Pedir_Coordenadas:          
 
     imprimeEnPantalla mensajeCoordenadas, longitudCoordenadas
-
-    leeTeclado
-    mov eax, [entrada]
-    mov [coord1], eax       ;aqui se almacena la coordenada 1
-
-    leeTeclado
-    mov eax, [entrada]
-    mov [coord2], eax       ;aqui se almacena la coordenada 2
-
-    leeTeclado
-    mov eax, [entrada]
-    mov [numCasilla], eax   ;aqui se almacena el numero de la casilla que corresponde a las coordenadas
-
+    lee3Teclado
+    
     jmp Valida_Coordenadas
 
-Valida_Coordenadas:
+Valida_Coordenadas:         ; puedo hacerla esta una macro
+
+    cmp byte[coord1], '0'
+    je cordenada_0
+
+    cmp byte[coord1], '1'
+    je cordenada_1
+
+    cmp byte[coord1], '2'
+    je cordenada_2
+
+
+cordenada_0:
+
+    cmp byte[coord2], '0'
+    mov eax, '1'    
+    ;imprimeEnPantalla mensajeDebug, longitudDebug   ; para debuguear lol
+    capturaNumero coordLista
+    jmp Valida_Valor               ;   AQUI OCUPO FUNCION PARA CABIAR EL NUMERO, VALIDAR SI HAY O NO NUMERO Y ETC
+
+    cmp byte[coord2], '1'
+    mov eax, '7'    
+    capturaNumero coordLista
+    jmp Valida_Valor
+
+    cmp byte[coord2], '2'
+    mov eax, '13'    
+    capturaNumero coordLista
+    jmp Valida_Valor
+
+cordenada_1:
     
+    cmp byte[coord2], '0'
+    mov eax, '13'    
+    capturaNumero coordLista
+    jmp Valida_Valor
+
+    cmp byte[coord2], '1'
+    mov eax, '13'    
+    capturaNumero coordLista
+    jmp Valida_Valor
+
+    cmp byte[coord2], '2'
+    mov eax, '13'    
+    capturaNumero coordLista
+    jmp Valida_Valor
+
+cordenada_2:  
+
+    cmp byte[coord2], '0'
+    mov eax, '13'    
+    capturaNumero coordLista
+    jmp Valida_Valor
+
+    cmp byte[coord2], '1'
+    mov eax, '13'    
+    capturaNumero coordLista
+    jmp Valida_Valor
+
+    cmp byte[coord2], '2'
+    mov eax, '13'    
+    capturaNumero coordLista
+    jmp Valida_Valor
+
+
+Valida_Valor:
+
+        cmp ecx, coordLista
+        je REEMPLACE
+
+        mov eax,4
+        mov ebx,1
+        mov edx,1
+        int 80h
+
+        inc ecx
+        jmp Valida_Valor
+
+REEMPLACE:
+        cmp byte[ecx], 0     ; aqui se intercambia la casilla por el numero
+        imprimeEnPantalla  noValidCoord, longnoValidCoord;OTRA FUNCION O SALGO DEL PROGRAMA
+        jne Pedir_Coordenadas
+        mov byte[ecx], 'A'
+
+
+
+
+
+
+    ;imprimeEnPantalla mensajeDebug, longitudDebug
+    ;jmp SALIR
 
     
 
@@ -213,4 +334,4 @@ cerrar_juego:
 
 
 SALIR:
-    salir
+    salir 
