@@ -18,6 +18,15 @@
                 int     0x80
         %endmacro
 
+
+        %macro imprimeEnPantalla2 2
+                mov     eax, sys_write     	; opción 4 de las interrupciones del kernel.
+                mov     ebx, stdout        	; standar output.
+                mov     esi, %1            	; mensaje.
+                mov     edx, %2            	; longitud.
+                int     0x80
+        %endmacro
+
     ;objetivo de la macro: captura un dato ASCII ingresado por teclado por parte del usuario y almacena la entrada en la variable de memoria "entrada"
 	;ejemplo de funcionamiento: leeTeclado
 	;ejemplo de uso:	    leeTeclado
@@ -62,6 +71,7 @@ section .bss
     coord2: resb 1      ; posicion y
     numCasilla: resb 1  ; numero a guardar en la casilla
     coordLista: resb 1  ; coordenada de casilla en el tablero
+    coordLista2: resb 1
 
 section .data ; segmento de datos y variables
 
@@ -134,6 +144,9 @@ longitudCoordenadas equ $-mensajeCoordenadas
 mensajeDebug: db 'voy por aqui :)', 0, 0
 longitudDebug equ $-mensajeDebug
 
+mensajeD: db 'voy por aca', 0, 0
+longitudD equ $-mensajeD
+
 section .text
 
 global _start
@@ -185,39 +198,48 @@ mostrar_tablero:
 
 TABLEROUNO: ;imprimeEnPantalla tablero0, longTablero
     imprimeEnPantalla tablero1, longTablero
-    mov ecx, tablero1
+    mov esi, tablero1
+    mov [numCasilla], al
     jmp Pedir_Coordenadas
 TABLERODOS:
     imprimeEnPantalla tablero2, longTablero
-    mov ecx, tablero2
+    mov esi, tablero2
+    mov [numCasilla], al
     jmp Pedir_Coordenadas
 TABLEROUNOTRES:
     imprimeEnPantalla tablero3, longTablero
-    mov ecx, tablero3
+    mov esi, tablero3
+    mov [numCasilla], al
     jmp Pedir_Coordenadas
 TABLEROCUATRO:
     imprimeEnPantalla tablero4, longTablero
-    mov ecx, tablero4
+    mov esi, tablero4
+    mov [numCasilla], al
     jmp Pedir_Coordenadas
 TABLEROCINCO:
     imprimeEnPantalla tablero5, longTablero
-    mov ecx, tablero5
+    mov esi, tablero5
+    mov [numCasilla], al
     jmp Pedir_Coordenadas
 TABLEROSEIS:
     imprimeEnPantalla tablero6, longTablero
-    mov ecx, tablero6
+    mov esi, tablero6
+    mov [numCasilla], al
     jmp Pedir_Coordenadas
 TABLEROSIETE:
     imprimeEnPantalla tablero7, longTablero
-    mov ecx, tablero6
+    mov esi, tablero6
+    mov [numCasilla], al
     jmp Pedir_Coordenadas
 TABLEROOCHO:
     imprimeEnPantalla tablero8, longTablero
-    mov ecx, tablero8
+    mov esi, tablero8
+    mov [numCasilla], al
     jmp Pedir_Coordenadas
 TABLERONUEVE:
     imprimeEnPantalla tablero9, longTablero
-    mov ecx, tablero9
+    mov esi, tablero9
+    mov [numCasilla], al
     jmp Pedir_Coordenadas
 
 
@@ -249,73 +271,87 @@ cordenada_0:
     cmp byte[coord2], '0'
     mov eax, '1'    
     ;imprimeEnPantalla mensajeDebug, longitudDebug   ; para debuguear lol
-    ;mov [coordLista], eax
-    capturaNumero coordLista2
+    mov [coordLista], eax
+    ;capturaNumero coordLista2
     jmp Valida_Valor               ;   AQUI OCUPO FUNCION PARA CABIAR EL NUMERO, VALIDAR SI HAY O NO NUMERO Y ETC
 
     cmp byte[coord2], '1'
     mov eax, '7'    
-    ;mov [coordLista], eax
-    capturaNumero coordLista2
+    mov [coordLista], eax
+    ;capturaNumero coordLista2
     jmp Valida_Valor
 
     cmp byte[coord2], '2'
     mov eax, '13'    
-    ;mov [coordLista], eax
-    capturaNumero coordLista2
+    mov [coordLista], eax
+    ;capturaNumero coordLista2
     jmp Valida_Valor
 
 cordenada_1:
     
     cmp byte[coord2], '0'
     mov eax, '17'    
-    ;mov [coordLista], eax
-    capturaNumero coordLista2
+    mov [coordLista], eax
+    ;capturaNumero coordLista2
     jmp Valida_Valor
 
     cmp byte[coord2], '1'
     mov eax, '23'    
-    ;mov [coordLista], eax
-    capturaNumero coordLista2
+    mov [coordLista], eax
+    ;capturaNumero coordLista2
     jmp Valida_Valor
 
     cmp byte[coord2], '2'
-    ;mov eax, '29'    
+    mov eax, '29'    
     mov [coordLista], eax
-    capturaNumero coordLista2
+    ;capturaNumero coordLista2
     jmp Valida_Valor
 
 cordenada_2:  
 
     cmp byte[coord2], '0'
     mov eax, '33'    
-    ;mov [coordLista], eax
-    capturaNumero coordLista2
+    mov [coordLista], eax
+    ;capturaNumero coordLista2
     jmp Valida_Valor
 
     cmp byte[coord2], '1'
     mov eax, '39'    
-    ;mov [coordLista], eax
-    capturaNumero coordLista2
+    mov [coordLista], eax
+    ;capturaNumero coordLista2
     jmp Valida_Valor
 
     cmp byte[coord2], '2'
     mov eax, '45'    
-    ;mov [coordLista], eax
-    capturaNumero coordLista2
+    mov [coordLista], eax
+    ;capturaNumero coordLista2
     jmp Valida_Valor
 
 
 Valida_Valor:
-        ;add ecx, coordLista2
+        ;imprimeEnPantalla mensajeD, longitudD
+        cmp esi, coordLista
+        je Son_Iguales
+        cmp esi, 0
+        je End_Of_Tablero
+        inc esi
 
-        mov byte[ecx],'A'
-        ;cmp byte[ecx], 0     ; aqui se intercambia la casilla por el numero
-        imprimeEnPantalla  tablero1, longTablero;OTRA FUNCION O SALGO DEL PROGRAMA
-        jmp SALIR
+        jmp Valida_Valor
+
+Son_Iguales:
+    mov byte[esi], 'W'
+    mov ecx, esi
+    
+    imprimeEnPantalla tablero1, longTablero
+    jmp SALIR
 
 
 
+
+
+End_Of_Tablero:
+    imprimeEnPantalla mensajeDebug, longitudDebug
+    jmp SALIR
 
 
 
@@ -323,6 +359,7 @@ Valida_Valor:
     ;jmp SALIR
 
     
+
 
 
 cerrar_juego:
