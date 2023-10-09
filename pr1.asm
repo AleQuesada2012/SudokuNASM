@@ -1,11 +1,40 @@
+
+
 ;objetivo de la macro: sale del programa hacia la terminal
 ;ejemplo de funcionamiento: salir
 ;ejemplo de uso: salir
+
 %macro salir 0
     mov eax,1
 	mov ebx,0
     int 80h
 %endmacro
+
+%macro leer3Inputs 0
+ ; Read the first number from the user
+    mov eax, 3
+    mov ebx, 0
+    mov ecx, coord1
+    mov edx, 1
+    int 0x80
+
+
+    ; Read the second number from the user
+    mov eax, 3
+    mov ebx, 0
+    mov ecx, coord2
+    mov edx, 1
+    int 0x80
+
+
+    ; Read the third number from the user
+    mov eax, 3
+    mov ebx, 0
+    mov ecx, numCasilla
+    mov edx, 1
+    int 0x80
+%endmacro
+
 
 	;objetivo de la macro: imprimir un texto en pantalla
 	;ejemplo de funcionamiento: imprimeEnPantalla variableEnMemoria variableEnMemoria
@@ -34,28 +63,13 @@
                 mov     eax,     sys_read      ; opción 3 de las interrupciones del kernel.
                 mov     ebx,     stdin         ; standar input.
                 mov     ecx,     entrada       ; dirección de memoria reservada para almacenar la entrada del teclado.
-                mov     edx,     8             ; número de bytes a leer.
+                mov     edx,     64             ; número de bytes a leer.
                 int     0x80
         %endmacro
 
 
 
-        %macro lee3Teclado 0
-                mov     eax,     sys_read      ; opción 3 de las interrupciones del kernel.
-                mov     ebx,     stdin         ; standar input.
-                mov     ecx,     coord1       ; dirección de memoria reservada para almacenar la entrada del teclado.
-                mov     edx,     8   
-                mov     eax,     sys_read      ; opción 3 de las interrupciones del kernel.
-                mov     ebx,     stdin         ; standar input.
-                mov     ecx,     coord2       ; dirección de memoria reservada para almacenar la entrada del teclado.
-                mov     edx,     8   
-                mov     eax,     sys_read      ; opción 3 de las interrupciones del kernel.
-                mov     ebx,     stdin         ; standar input.
-                mov     ecx,     numCasilla       ; dirección de memoria reservada para almacenar la entrada del teclado.
-                mov     edx,     8   
-
-                int     0x80
-        %endmacro
+   
 
 
 
@@ -65,8 +79,9 @@
                 mov     [%1], eax              ; transfiere el contenido del registro eax hacia el contenido de la variable de memoria ingresada en el parametro uno 
         %endmacro
 
+
 section .bss
-    entrada: resb 1     ; digito de entrada
+    entrada: resb 10     ; digito de entrada
     coord1: resb 1      ; posicion x
     coord2: resb 1      ; posicion y
     numCasilla: resb 1  ; numero a guardar en la casilla
@@ -89,30 +104,51 @@ section .data ; segmento de datos y variables
 menuInicio: db 'Bienvenido al Juego de SUDOKU!', 10, 10, 'Seleccione una opcion:', 10, '1. Iniciar juego', 0xA, '2. Salir', 10, 0
 longMenu: equ $-menuInicio
 
-target_position1 EQU 1      ; se pone EQU en lugar de dd
-target_position2 EQU 7
-target_position3 EQU 13
-target_position4 EQU 17
-target_position5 EQU 23
-target_position6 EQU 29
-target_position7 EQU 33
-target_position8 EQU 39
-target_position9 EQU 45
 
 ;cada caracter del tablero es un byte, para recorrerlo hay que ir byte por byte
 tablero0: db "[ ] | [ ] | [ ]", 10, "[ ] | [5] | [ ]", 0xA, "[ ] | [ ] | [ ]", 0xA, 0
 longTablero equ $-tablero0 ; en principio, las longitudes deberian ser iguales
 tablero1: db "[ ] | [9] | [ ]", 10, "[ ] | [5] | [ ]", 0xA, "[8] | [ ] | [6]", 0xA, 0
+tablero1sol: db "[4] | [9] | [2]", 10, "[3] | [5] | [7]", 0xA, "[8] | [1] | [6]", 0xA, 0
+
 tablero2: db "[4] | [ ] | [2]", 10, "[ ] | [5] | [ ]", 0xA, "[8] | [ ] | [ ]", 0xA, 0
+tablero2sol: db "[4] | [9] | [2]", 10, "[3] | [5] | [7]", 0xA, "[8] | [1] | [6]", 0xA, 0
+
+
 tablero3: db "[4] | [ ] | [ ]", 10, "[3] | [5] | [ ]", 0xA, "[ ] | [1] | [6]", 0xA, 0
+
+
 tablero4: db "[ ] | [9] | [ ]", 10, "[ ] | [5] | [3]", 0xA, "[6] | [ ] | [ ]", 0xA, 0
+
+
 tablero5: db "[2] | [ ] | [4]", 10, "[ ] | [5] | [ ]", 0xA, "[ ] | [1] | [ ]", 0xA, 0
+tablero5sol: db "[2] | [9] | [4]", 10, "[7] | [5] | [3]", 0xA, "[6] | [1] | [8]", 0xA, 
+
 tablero6: db "[ ] | [ ] | [ ]", 10, "[7] | [5] | [ ]", 0xA, "[ ] | [ ] | [8]", 0xA, 0
+tablero6sol: db "[2] | [9] | [4]", 10, "[7] | [5] | [3]", 0xA, "[6] | [1] | [8]", 0xA,
+
 tablero7: db "[ ] | [1] | [ ]", 10, "[ ] | [5] | [3]", 0xA, "[ ] | [9] | [ ]", 0xA, 0
+tablero7sol: db "[6] | [1] | [8]", 10, "[7] | [5] | [3]", 0xA, "[2] | [9] | [4]", 0xA, 0
+
 tablero8: db "[6] | [ ] | [ ]", 10, "[ ] | [5] | [3]", 0xA, "[2] | [ ] | [ ]", 0xA, 0
+tablero8sol: db "[6] | [1] | [8]", 10, "[7] | [5] | [3]", 0xA, "[2] | [9] | [4]", 0xA, 0
+
 tablero9: db "[ ] | [ ] | [ ]", 10, "[7] | [5] | [ ]", 0xA, "[ ] | [ ] | [4]", 0xA, 0
+tablero9sol: db "[6] | [1] | [8]", 10, "[7] | [5] | [3]", 0xA, "[2] | [9] | [4]", 0xA, 0
+
 ;los numeros van: 1-7-13-30-43-59-72-85. Entre 30 y 43 está el 5.
 ; aqui ya se supone que estan los tableros
+
+
+
+
+
+
+
+
+
+
+
 
 
 entradaEquivocada: db 'Entrada equivocada. Intente de nuevo!', 10, 10
@@ -241,116 +277,142 @@ TABLERONUEVE:
 Pedir_Coordenadas:          
 
     imprimeEnPantalla mensajeCoordenadas, longitudCoordenadas
-    lee3Teclado
+               ; second value on the stack is the program name (discarded when we initialise edx)
+    leeTeclado
+    jmp Valida_Coordenadas2
+
+
+Valida_Coordenadas2:             ; puedo hacerla esta una macro
+
+    ;mov [coord1], ecx
+    ;call skip_whitespace
+    ;mov [coord2], ecx
+    ;call skip_whitespace
+    ;mov [numCasilla], ecx
     
-    jmp Valida_Coordenadas
+    
+    cmp byte[entrada], '0'       ; operacion
+    je coordenada_0
 
-Valida_Coordenadas:         ; puedo hacerla esta una macro
+    cmp byte[entrada], '1'
+    je coordenada_1
 
-    cmp byte[coord2], '0'
-    je cordenada_0
+    cmp byte[entrada], '2'
+    je coordenada_2
 
-    cmp byte[coord2], '1'
-    je cordenada_1
-
-    cmp byte[coord2], '2'
-    je cordenada_2
+   
 
 
-cordenada_0:
-
-    cmp byte[coord1], '0'
+coordenada_0:
+  
+    ;add ecx, 2
+    leeTeclado
+    cmp byte[entrada], '0'
     je tp1
 
-    cmp byte[coord1], '1'
+    cmp byte[entrada], '1'
     je tp2
 
-    cmp byte[coord1], '2'
+    cmp byte[entrada], '2'
     je tp3
+
 tp1:
-    mov ecx, 1     ; en ecx va a quedar uno
+    
+    mov edx, 1     ; en ecx va a quedar uno
+    ;dec ecx
     jmp Valida_Valor                ;   AQUI OCUPO FUNCION PARA CABIAR EL NUMERO, VALIDAR SI HAY O NO NUMERO Y ETC
 tp2:
-    mov ecx, 7        ; probar sin parentesis
+    
+    mov edx, 7        ; probar sin parentesis
+    ;dec ecx
     jmp Valida_Valor
 tp3:
-    mov ecx, 13
+    mov edx, 13
+    ;dec ecx
     jmp Valida_Valor
 
-cordenada_1:
-    
-    cmp byte[coord1], '0'
+coordenada_1:
+    ;dec ecx
+    ;add ecx, 2
+    leeTeclado
+    cmp byte[entrada], '0'
     je tp4
 
-    cmp byte[coord1], '1'
+    cmp byte[entrada], '1'
     je tp5
 
-    cmp byte[coord1], '2'
+    cmp byte[entrada], '2'
     je tp6
 
 tp4:
-    mov ecx, 17
+    mov edx, 17
     jmp Valida_Valor
 tp5:
-    mov ecx, 23
+    mov edx, 23
     jmp Valida_Valor
 tp6:
-    mov ecx, 29
+    mov edx, 29
+    ;dec ecx
     jmp Valida_Valor
     
-cordenada_2:  
-
-    cmp byte[coord1], '0'
+coordenada_2:  
+    ;dec ecx
+    ;add ecx, 2
+    leeTeclado
+    cmp byte[entrada], '0'
     je tp7
    
-
-    cmp byte[coord1], '1'
+    cmp byte[entrada], '1'
     je tp8
     
-    cmp byte[coord1], '2'
+    cmp byte[entrada], '2'
     je tp9
     
 tp7:
-    mov ecx, 33
+    mov edx, 33
     jmp Valida_Valor
 tp8:
-    mov ecx, 39
+    mov edx, 39
     jmp Valida_Valor
 tp9:
-    mov ecx, 45
+    mov edx, 45                 ; en eax estan los saltos correspondientes a las coordenadas
     jmp Valida_Valor
 
 
 Valida_Valor:
-
         ;mov al, [esi]
-        ;cmp ecx, 0              ; brinca si el taguet position es cero
-        add esi, ecx
-        jmp replace_space
+        ;cmp edx, 0              ; brinca si el taguet position es cero
+        add esi, edx     
+        je replace_space
+
+        ;inc esi
+        ;dec edx
 
 replace_space:
-    mov al, [esi]
-    cmp al, ' '             ; compara si la casilla no tiene nada
-    je Casilla_Vacia
-    jne Casilla_No_Vacia
+    ;mov bl, [numCasilla]           ; el imput del numero
+    add ecx, 2                      ; aqui se incrementa la entrada para agarrar el numero de casilla
+    mov byte [esi], '#'             ; compara si la casilla no tiene nada
+    ;mov esi,0
+    sub esi, edx
+    mov edx, 0       
+    jmp Casilla_Vacia
+    ;jne Casilla_No_Vacia
 
 
 
-;printMessage: 
- ;   mov eax, 4          ; syscall number for write
-  ;  mov ebx, 1          ; file descriptor (stdout)
-   ; mov ecx, tablero1    ; pointer to the message
-    ;mov edx, 49         ; message length (excluding null terminator)
-    ;int 0x80            ; invoke the syscall
-    ;jmp Pedir_Coordenadas
+printMessage: 
+    mov eax, 4          ; syscall number for write
+    mov ebx, 1          ; file descriptor (stdout)
+    mov ecx, tablero1    ; pointer to the message
+    mov edx, 49         ; message length (excluding null terminator)
+    int 0x80            ; invoke the syscall
+    jmp Pedir_Coordenadas
 
 
 
 
 
 Casilla_Vacia:
-    mov bl, [numCasilla]        ; el imput del numero
-    mov byte [esi], bl
     jmp printMessage
 
 
@@ -358,16 +420,8 @@ Casilla_No_Vacia:
     imprimeEnPantalla noValidCoord, longnoValidCoord
     jmp Pedir_Coordenadas
 
-
-
-
-
     ;imprimeEnPantalla mensajeDebug, longitudDebug
     ;jmp SALIR
-
-    
-
-
 
 cerrar_juego:
     imprimeEnPantalla despedida, longDespedida
