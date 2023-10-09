@@ -89,15 +89,15 @@ section .data ; segmento de datos y variables
 menuInicio: db 'Bienvenido al Juego de SUDOKU!', 10, 10, 'Seleccione una opcion:', 10, '1. Iniciar juego', 0xA, '2. Salir', 10, 0
 longMenu: equ $-menuInicio
 
-target_position1 equ 1
-target_position2 equ 7
-target_position3 equ 13
-target_position4 equ 17
-target_position5 equ 23
-target_position6 equ 29
-target_position7 equ 33
-target_position8 equ 39
-target_position9 equ 45
+target_position1 EQU 1      ; se pone EQU en lugar de dd
+target_position2 EQU 7
+target_position3 EQU 13
+target_position4 EQU 17
+target_position5 EQU 23
+target_position6 EQU 29
+target_position7 EQU 33
+target_position8 EQU 39
+target_position9 EQU 45
 
 ;cada caracter del tablero es un byte, para recorrerlo hay que ir byte por byte
 tablero0: db "[ ] | [ ] | [ ]", 10, "[ ] | [5] | [ ]", 0xA, "[ ] | [ ] | [ ]", 0xA, 0
@@ -137,7 +137,7 @@ mensajeTablero: db 'Inserte un número (1 a 9): ', 0, 0
 longitud equ $-mensajeTablero
 
 
-mensajeCoordenadas: db 'Inserte el  número correspondiente a agregar y las coordenadas: ',0,0
+mensajeCoordenadas: db 'Inserte el número correspondiente a agregar y sus coordenadas: ',0,0
 longitudCoordenadas equ $-mensajeCoordenadas
 
 mensajeDebug: db 'voy por aqui :)', 0, 0
@@ -170,7 +170,7 @@ Inicio:
 mostrar_tablero:
     imprimeEnPantalla mensajeTablero, longitud
     leeTeclado ; en caso de que uno quiera pedirle manualmente el tablero que quiere usar
-    ; AQUI VOY A EMPEZAR A COMPARAR LOS TABLEROS
+    ; AQUI VOY A EMPEZAR A COMPARAR y seleccionar LOS TABLEROS
     cmp byte [entrada], '1'
     je TABLEROUNO ;imprimeEnPantalla tablero0, longTablero
     cmp byte [entrada], '2'
@@ -247,124 +247,111 @@ Pedir_Coordenadas:
 
 Valida_Coordenadas:         ; puedo hacerla esta una macro
 
-    cmp byte[coord1], '0'
+    cmp byte[coord2], '0'
     je cordenada_0
 
-    cmp byte[coord1], '1'
+    cmp byte[coord2], '1'
     je cordenada_1
 
-    cmp byte[coord1], '2'
+    cmp byte[coord2], '2'
     je cordenada_2
 
 
 cordenada_0:
 
-    cmp byte[coord2], '0'
-    ;mov eax, '1'    
-    ;imprimeEnPantalla mensajeDebug, longitudDebug   ; para debuguear lol
-    ;mov [coordLista], eax
-    ;capturaNumero coordLista2
-    mov ecx, target_position1
-    jmp Valida_Valor               ;   AQUI OCUPO FUNCION PARA CABIAR EL NUMERO, VALIDAR SI HAY O NO NUMERO Y ETC
+    cmp byte[coord1], '0'
+    je tp1
 
-    cmp byte[coord2], '1'
-    ;mov eax, '7'    
-    ;mov [coordLista], eax
-    ;capturaNumero coordLista2
-    mov ecx, target_position2
+    cmp byte[coord1], '1'
+    je tp2
+
+    cmp byte[coord1], '2'
+    je tp3
+tp1:
+    mov ecx, 1     ; en ecx va a quedar uno
+    jmp Valida_Valor                ;   AQUI OCUPO FUNCION PARA CABIAR EL NUMERO, VALIDAR SI HAY O NO NUMERO Y ETC
+tp2:
+    mov ecx, 7        ; probar sin parentesis
     jmp Valida_Valor
-
-    cmp byte[coord2], '2'
-    ;mov eax, '13'    
-    ;mov [coordLista], eax
-    ;capturaNumero coordLista2
-    mov ecx, target_position3
+tp3:
+    mov ecx, 13
     jmp Valida_Valor
 
 cordenada_1:
     
-    cmp byte[coord2], '0'
-    ;mov eax, '17'    
-    ;mov [coordLista], eax
-    ;capturaNumero coordLista2
-    mov ecx, target_position4
-    jmp Valida_Valor
+    cmp byte[coord1], '0'
+    je tp4
 
-    cmp byte[coord2], '1'
-    ;mov eax, '23'    
-    ;mov [coordLista], eax
-    ;capturaNumero coordLista2
-    mov ecx, target_position5
-    jmp Valida_Valor
+    cmp byte[coord1], '1'
+    je tp5
 
-    cmp byte[coord2], '2'
-    ;mov eax, '29'    
-    ;mov [coordLista], eax
-    ;capturaNumero coordLista2
-    mov ecx, target_position6
-    jmp Valida_Valor
+    cmp byte[coord1], '2'
+    je tp6
 
+tp4:
+    mov ecx, 17
+    jmp Valida_Valor
+tp5:
+    mov ecx, 23
+    jmp Valida_Valor
+tp6:
+    mov ecx, 29
+    jmp Valida_Valor
+    
 cordenada_2:  
 
-    cmp byte[coord2], '0'
-    ;mov eax, '33'    
-    ;mov [coordLista], eax
-    ;capturaNumero coordLista2
-    mov ecx, target_position7
-    jmp Valida_Valor
+    cmp byte[coord1], '0'
+    je tp7
+   
 
-    cmp byte[coord2], '1'
-    ;mov eax, '39'    
-    ;mov [coordLista], eax
-    ;capturaNumero coordLista2
-    mov ecx, target_position8
+    cmp byte[coord1], '1'
+    je tp8
+    
+    cmp byte[coord1], '2'
+    je tp9
+    
+tp7:
+    mov ecx, 33
     jmp Valida_Valor
-
-    cmp byte[coord2], '2'
-    ;mov eax, '45'    
-    ;mov [coordLista], eax
-    ;capturaNumero coordLista2
-    mov ecx, target_position9
+tp8:
+    mov ecx, 39
+    jmp Valida_Valor
+tp9:
+    mov ecx, 45
     jmp Valida_Valor
 
 
 Valida_Valor:
 
-        mov al, [esi]
-        cmp ecx, 0
-        je replace_space
-        ;cmp esi, coordLista
-        ;je Son_Iguales
-
-        inc esi
-        dec ecx
-
-        jmp Valida_Valor
+        ;mov al, [esi]
+        ;cmp ecx, 0              ; brinca si el taguet position es cero
+        add esi, ecx
+        jmp replace_space
 
 replace_space:
-    mov bl, [numCasilla]
+    mov al, [esi]
+    cmp al, ' '             ; compara si la casilla no tiene nada
+    je Casilla_Vacia
+    jne Casilla_No_Vacia
+
+
+
+;printMessage: 
+ ;   mov eax, 4          ; syscall number for write
+  ;  mov ebx, 1          ; file descriptor (stdout)
+   ; mov ecx, tablero1    ; pointer to the message
+    ;mov edx, 49         ; message length (excluding null terminator)
+    ;int 0x80            ; invoke the syscall
+    ;jmp Pedir_Coordenadas
+
+
+
+
+
+Casilla_Vacia:
+    mov bl, [numCasilla]        ; el imput del numero
     mov byte [esi], bl
     jmp printMessage
-
-;Son_Iguales:
-;    mov byte[esi],'#'
-;    jmp printMessage
-    ;je Casilla_Vacia
-    ;jne Casilla_No_Vacia         ; AQUI LO QUE SE DEBE HACER ES CAMBIAR LA CASILLA POR LA VARIABLE numCasilla
-
-
-
-printMessage: 
-    mov eax, 4          ; syscall number for write
-    mov ebx, 1          ; file descriptor (stdout)
-    mov ecx, tablero1    ; pointer to the message
-    mov edx, 49         ; message length (excluding null terminator)
-    int 0x80            ; invoke the syscall
-    jmp Pedir_Coordenadas
-
-
-
-
 
 
 Casilla_No_Vacia:
