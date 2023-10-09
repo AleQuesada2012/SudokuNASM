@@ -209,35 +209,47 @@ Inicio:
 
 
 mostrar_tablero:
-    imprimeEnPantalla mensajeTablero, longitud
-    leeTeclado ; en caso de que uno quiera pedirle manualmente el tablero que quiere usar
+    call tableroRandom
+    ;leeTeclado ; en caso de que uno quiera pedirle manualmente el tablero que quiere usar
     ; AQUI VOY A EMPEZAR A COMPARAR y seleccionar LOS TABLEROS
-    cmp byte [entrada], '1'
+    cmp  byte [entrada], 1
     je TABLEROUNO ;imprimeEnPantalla tablero0, longTablero
-    cmp byte [entrada], '2'
+    cmp byte [entrada], 2
     je TABLERODOS
-    cmp byte [entrada], '3'
+    cmp byte [entrada], 3
     je TABLEROUNOTRES
-    cmp byte [entrada], '4'
+    cmp byte [entrada], 4
     je TABLEROCUATRO
-    cmp byte [entrada], '5'
+    cmp byte [entrada], 5
     je TABLEROCINCO
-    cmp byte [entrada], '6'
+    cmp byte [entrada], 6
     je TABLEROSEIS
-    cmp byte [entrada], '7'
+    cmp byte [entrada], 7
     je TABLEROSIETE
-    cmp byte [entrada], '8'
+    cmp byte [entrada], 8
     je TABLEROOCHO
-    cmp byte [entrada], '9'
+    cmp byte [entrada], 9
     je TABLERONUEVE
 
-    cmp byte [entrada], teclaEscape
-    je Inicio        ; durante la solicitud de tablero igual se puede presionar escape
+    ;cmp byte [entrada], teclaEscape
+    ;je Inicio        ; durante la solicitud de tablero igual se puede presionar escape
 
     ; aqui habria que agregar la logica para procesar la entrada
 
     jmp SALIR
 
+
+; Objetivo de la subrutina: generar un número aleatorio entre 1 y 9 (inclusive) que se almacena en la variable entrada
+; ejemplo de funcionamiento: tableroRandom
+; ejemplo de uso: jmp tableroRandom
+tableroRandom:
+    rdtsc       ; usa el Read Time-Stamp Counter
+    and ah, 00001111b ; guarda en ah los 4 bits menos significativos
+    inc ah            ; ajusta el rango a 1 - 9 pues el and podía dar un 0
+    cmp ah, 10        ; si el valor supera el 9, se regenera
+    jae tableroRandom
+    mov [entrada], ah      ; copia el valor almacenado en ah a la dirección en memoria de la variable
+    ret
 
 TABLEROUNO: ;imprimeEnPantalla tablero0, longTablero
     imprimeEnPantalla tablero1, longTablero
@@ -395,7 +407,7 @@ coordenada_2:
     cmp byte[entrada], teclaEscape
     je Inicio
     
-    
+
 tp7:
     mov edx, 33
     jmp Valida_Valor
