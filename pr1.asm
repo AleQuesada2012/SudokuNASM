@@ -99,6 +99,9 @@ section .data ; segmento de datos y variables
         sys_execve      EQU     11
         stdin           EQU 	0
         stdout          EQU 	1
+    
+    ; otras constantes
+        teclaEscape     EQU     27
 
 
 menuInicio: db 'Bienvenido al Juego de SUDOKU!', 10, 10, 'Seleccione una opcion:', 10, '1. Iniciar juego', 0xA, '2. Salir', 10, 0
@@ -197,6 +200,8 @@ Inicio:
     je mostrar_tablero
     cmp byte[entrada], '2'
     je cerrar_juego
+    cmp byte[entrada], teclaEscape ; revisa si la entrada del usuario fue la tecla escape
+    je cerrar_juego                ; se salta a la misma sección de salida en ese caso
 
     imprimeEnPantalla entradaEquivocada, longEntEq ; llega aquí si la entrada no era 1 ni 2
     jmp Inicio
@@ -225,6 +230,9 @@ mostrar_tablero:
     je TABLEROOCHO
     cmp byte [entrada], '9'
     je TABLERONUEVE
+
+    cmp byte [entrada], teclaEscape
+    je Inicio        ; durante la solicitud de tablero igual se puede presionar escape
 
     ; aqui habria que agregar la logica para procesar la entrada
 
@@ -279,6 +287,9 @@ Pedir_Coordenadas:
     imprimeEnPantalla mensajeCoordenadas, longitudCoordenadas
                ; second value on the stack is the program name (discarded when we initialise edx)
     leeTeclado
+    ; agregar validación adicional para casos donde se presiona la tecla escape:
+    cmp byte [entrada], teclaEscape
+    je Inicio
     jmp Valida_Coordenadas2
 
 
@@ -300,6 +311,13 @@ Valida_Coordenadas2:             ; puedo hacerla esta una macro
     cmp byte[entrada], '2'
     je coordenada_2
 
+    ; de forma similar a bloques anteriores de validación, si presiona escape, debe cerrarse
+    cmp byte[entrada], teclaEscape
+    je Inicio
+
+    ; si la entrada no es ni una coordenada válida, y tampoco la tecla escape, se arroja un error
+    
+
    
 
 
@@ -315,6 +333,9 @@ coordenada_0:
 
     cmp byte[entrada], '2'
     je tp3
+
+    cmp byte[entrada], teclaEscape
+    je Inicio
 
 tp1:
     
@@ -344,6 +365,9 @@ coordenada_1:
     cmp byte[entrada], '2'
     je tp6
 
+    cmp byte[entrada], teclaEscape
+    je Inicio
+
 tp4:
     mov edx, 17
     jmp Valida_Valor
@@ -367,6 +391,10 @@ coordenada_2:
     
     cmp byte[entrada], '2'
     je tp9
+
+    cmp byte[entrada], teclaEscape
+    je Inicio
+    
     
 tp7:
     mov edx, 33
@@ -381,7 +409,7 @@ tp9:
 
 Valida_Valor:
         ;mov al, [esi]
-        ;cmp edx, 0              ; brinca si el taguet position es cero
+        ;cmp edx, 0              ; brinca si la posicion objetivo es cero
         add esi, edx     
         je replace_space
 
@@ -430,8 +458,4 @@ cerrar_juego:
 
 
 SALIR:
-    salir 
-
-
-SALIR:
-    salir 
+    salir
