@@ -56,14 +56,14 @@
                 int     0x80
         %endmacro
 
-    ;objetivo de la macro: captura un dato ASCII ingresado por teclado por parte del usuario y almacena la entrada en la variable de memoria "entrada"
-	;ejemplo de funcionamiento: leeTeclado
-	;ejemplo de uso:	    leeTeclado
-        %macro leeTeclado 0
+    ;objetivo de la macro: captura un dato ASCII ingresado por teclado por parte del usuario y almacena la entrada en la variable de memoria que se pasa por parámetro
+	;ejemplo de funcionamiento: leeTeclado variableReservada
+	;ejemplo de uso:	    leeTeclado entrada
+        %macro leeTeclado 1
                 mov     eax,     sys_read      ; opción 3 de las interrupciones del kernel.
                 mov     ebx,     stdin         ; standar input.
-                mov     ecx,     entrada       ; dirección de memoria reservada para almacenar la entrada del teclado.
-                mov     edx,     64             ; número de bytes a leer.
+                mov     ecx,     [%1]       ; dirección de memoria reservada para almacenar la entrada del teclado.
+                mov     edx,     1             ; número de bytes a leer.
                 int     0x80
         %endmacro
 
@@ -80,8 +80,27 @@
         %endmacro
 
 
+%macro validarTableroCompleto 2:
+    cmp r8, 5
+    je evitar_comparar
+    comparar:
+        mov rsi, %1     ; copia la dirección del tablero jugado al registro de fuente
+        mov rdi, %2     ; copia la dirección del tablero resuelto al registro de destino
+        xor rcx, rcx
+        ciclo_comparacion:
+            mov al, [rsi + rcx] ; carga un valor ASCII con desplazamiento en el ciclo
+            mov bl, [rdi + rcx]
+            cmp al, bl          ; compara si los valores de ambos mensajes son iguales
+            jne perdio          ; si en algún momento son distintos, se sabe que ya perdió
+            cmp al, 0           ; si se llega al terminador nulo es porque los mensajes eran iguales
+            je ganador
+            inc rcx             ; aumenta el desplazamiento para avanzar al siguiente valor ASCII
+            jmp ciclo_comparacion
+    evitar_comparar:            ; etiqueta vacía para saltar si la comparación no se cumple
+%endmacro
+
 section .bss
-    entrada: resb 10     ; digito de entrada
+    entrada: resb 1     ; digito de entrada
     coord1: resb 1      ; posicion x
     coord2: resb 1      ; posicion y
     numCasilla: resb 1  ; numero a guardar en la casilla
@@ -125,10 +144,10 @@ tablero4: db "[ ] | [9] | [ ]", 10, "[ ] | [5] | [3]", 0xA, "[6] | [ ] | [ ]", 0
 
 
 tablero5: db "[2] | [ ] | [4]", 10, "[ ] | [5] | [ ]", 0xA, "[ ] | [1] | [ ]", 0xA, 0
-tablero5sol: db "[2] | [9] | [4]", 10, "[7] | [5] | [3]", 0xA, "[6] | [1] | [8]", 0xA, 
+tablero5sol: db "[2] | [9] | [4]", 10, "[7] | [5] | [3]", 0xA, "[6] | [1] | [8]", 0xA, 0
 
 tablero6: db "[ ] | [ ] | [ ]", 10, "[7] | [5] | [ ]", 0xA, "[ ] | [ ] | [8]", 0xA, 0
-tablero6sol: db "[2] | [9] | [4]", 10, "[7] | [5] | [3]", 0xA, "[6] | [1] | [8]", 0xA,
+tablero6sol: db "[2] | [9] | [4]", 10, "[7] | [5] | [3]", 0xA, "[6] | [1] | [8]", 0xA, 0
 
 tablero7: db "[ ] | [1] | [ ]", 10, "[ ] | [5] | [3]", 0xA, "[ ] | [9] | [ ]", 0xA, 0
 tablero7sol: db "[6] | [1] | [8]", 10, "[7] | [5] | [3]", 0xA, "[2] | [9] | [4]", 0xA, 0
@@ -172,12 +191,25 @@ noValidCoord: db 'Casilla no vacía, intente de nuevo', 10
 longnoValidCoord equ $-noValidCoord
 
 
-mensajeTablero: db 'Inserte un número (1 a 9): ', 0, 0
-longitud equ $-mensajeTablero
+;mensajeTablero: db 'Inserte un número (1 a 9): ', 0, 0 ; ya no se usan porque el tablero se calcula aleatoriamente
+;longitud equ $-mensajeTablero
 
 
-mensajeCoordenadas: db 'Inserte el número correspondiente a agregar y sus coordenadas: ',0,0
-longitudCoordenadas equ $-mensajeCoordenadas
+mensajeNumero: db 'Inserte el número correspondiente a agregar: ', 0, 0
+longMsgNumero equ $-mensajeNumero
+
+mensajeCoordX: db 'Inserte la fila: ', 0, 0
+longMsgCoordX equ $-mensajeCoordX
+
+mensajeCoordY db 'Inserte la columna: ', 0, 0
+longMsgCoordY equ $-mensajeCoordY
+
+
+mensajeVictoria db 'Felicidades! Ha ganado el juego de SUDOKU.', 10, 10 'presione 1 si desea jugar nuevamente, o 2 si desea salir: ', 0
+longVictoria equ $-mensajeVictoria
+
+mensajeDerrota db 'El tablero completado no consiguió sumar 15 en filas, columnas y diagonales.' 10, 10
+longDerrota equ $-mensajeDerrota
 
 mensajeDebug: db 'voy por aqui :)', 0, 0
 longitudDebug equ $-mensajeDebug
@@ -194,8 +226,9 @@ _start:
 Inicio:
     ;xor rax, rax
     ;xor rbx, rbx
+    xor r8, r8 ; limpia el registro que vamos a usar como contador de colocaciones exitosas en el tablero
     imprimeEnPantalla menuInicio, longMenu
-    leeTeclado      ; carga la variable a entrada
+    leeTeclado entrada      ; carga la variable a entrada
     cmp byte [entrada], '1' ; compara con el valor ASCII de 1
     je mostrar_tablero
     cmp byte[entrada], '2'
@@ -241,7 +274,7 @@ mostrar_tablero:
 
 ; Objetivo de la subrutina: generar un número aleatorio entre 1 y 9 (inclusive) que se almacena en la variable entrada
 ; ejemplo de funcionamiento: tableroRandom
-; ejemplo de uso: jmp tableroRandom
+; ejemplo de uso: call tableroRandom
 tableroRandom:
     rdtsc       ; usa el Read Time-Stamp Counter
     and ah, 00001111b ; guarda en ah los 4 bits menos significativos
@@ -252,39 +285,57 @@ tableroRandom:
     ret
 
 TABLEROUNO: ;imprimeEnPantalla tablero0, longTablero
+    ;cmp r8, 4  ; DE MOMENTO esta comparación se movió a la macro de validación, aún está pendiente probar su funcionamiento
+    ;validarTableroCompleto tablero1, tablero1sol
+
     imprimeEnPantalla tablero1, longTablero
     mov esi, tablero1
     jmp Pedir_Coordenadas
+
 TABLERODOS:
+    ;validarTableroCompleto tablero2, tablero2sol
     imprimeEnPantalla tablero2, longTablero
     mov esi, tablero2
     jmp Pedir_Coordenadas
+
 TABLEROUNOTRES:
+    ;validarTableroCompleto tablero3, tablero2sol
     imprimeEnPantalla tablero3, longTablero
     mov esi, tablero3
     jmp Pedir_Coordenadas
+
 TABLEROCUATRO:
+    ;validarTableroCompleto tablero4, tablero5sol
     imprimeEnPantalla tablero4, longTablero
     mov esi, tablero4
     jmp Pedir_Coordenadas
+
 TABLEROCINCO:
+    ;validarTableroCompleto tablero5, tablero5sol
     imprimeEnPantalla tablero5, longTablero
     mov esi, tablero5
     jmp Pedir_Coordenadas
+
 TABLEROSEIS:
+    ;validarTableroCompleto tablero6, tablero6sol
     imprimeEnPantalla tablero6, longTablero
     mov esi, tablero6
     jmp Pedir_Coordenadas
+
 TABLEROSIETE:
+    ;validarTableroCompleto tablero7, tablero7sol
     imprimeEnPantalla tablero7, longTablero
     mov esi, tablero7
     jmp Pedir_Coordenadas
+
 TABLEROOCHO:
+    ;validarTableroCompleto tablero8, tablero8sol
     imprimeEnPantalla tablero8, longTablero
     mov esi, tablero8
-   
     jmp Pedir_Coordenadas
+
 TABLERONUEVE:
+    ;validarTableroCompleto tablero9, tablero9sol
     imprimeEnPantalla tablero9, longTablero
     mov esi, tablero9
     jmp Pedir_Coordenadas
@@ -296,12 +347,26 @@ TABLERONUEVE:
 
 Pedir_Coordenadas:          
 
-    imprimeEnPantalla mensajeCoordenadas, longitudCoordenadas
-               ; second value on the stack is the program name (discarded when we initialise edx)
-    leeTeclado
+    imprimeEnPantalla mensajeNumero, longMsgNumero ; cambiar por un mensaje para cada solicitud
+    leeTeclado entrada      ; se pide la entrada del número a colocar en el tablero
     ; agregar validación adicional para casos donde se presiona la tecla escape:
     cmp byte [entrada], teclaEscape
     je Inicio
+    ; si no es escape, pedimos la coordenada en X
+    imprimeEnPantalla mensajeCoordX, longMsgCoordX
+    leeTeclado coord1
+
+    ; nuevamente verificamos si la persona no presionó escape porque es posible presionarla en cualquier momento
+    cmp byte [coord1], teclaEscape
+    je Inicio
+    ; si no es escape, pedimos la coordenada en Y
+
+    imprimeEnPantalla mensajeCoordY, longMsgCoordY
+    leeTeclado coord2
+
+    cmp byte [coord2], teclaEscape
+    je Inicio
+
     jmp Valida_Coordenadas2
 
 
@@ -314,20 +379,21 @@ Valida_Coordenadas2:             ; puedo hacerla esta una macro
     ;mov [numCasilla], ecx
     
     
-    cmp byte[entrada], '0'       ; operacion
+    cmp byte[coord1], '0'       ; operacion
     je coordenada_0
 
-    cmp byte[entrada], '1'
+    cmp byte[coord1], '1'
     je coordenada_1
 
-    cmp byte[entrada], '2'
+    cmp byte[coord1], '2'
     je coordenada_2
 
     ; de forma similar a bloques anteriores de validación, si presiona escape, debe cerrarse
-    cmp byte[entrada], teclaEscape
+    cmp byte[coord1], teclaEscape
     je Inicio
-
     ; si la entrada no es ni una coordenada válida, y tampoco la tecla escape, se arroja un error
+    imprimeEnPantalla entradaEquivocada, longEntEq
+    jmp Pedir_Coordenadas
     
 
    
@@ -337,17 +403,21 @@ coordenada_0:
   
     ;add ecx, 2
     leeTeclado
-    cmp byte[entrada], '0'
+    cmp byte[coord2], '0'
     je tp1
 
-    cmp byte[entrada], '1'
+    cmp byte[coord2], '1'
     je tp2
 
-    cmp byte[entrada], '2'
+    cmp byte[coord2], '2'
     je tp3
 
-    cmp byte[entrada], teclaEscape
+    cmp byte[coord2], teclaEscape
     je Inicio
+
+    ; si la entrada no es ni una coordenada válida, y tampoco la tecla escape, se arroja un error
+    imprimeEnPantalla entradaEquivocada, longEntEq
+    jmp Pedir_Coordenadas
 
 tp1:
     
@@ -368,17 +438,21 @@ coordenada_1:
     ;dec ecx
     ;add ecx, 2
     leeTeclado
-    cmp byte[entrada], '0'
+    cmp byte[coord2], '0'
     je tp4
 
-    cmp byte[entrada], '1'
+    cmp byte[coord2], '1'
     je tp5
 
-    cmp byte[entrada], '2'
+    cmp byte[coord2], '2'
     je tp6
 
-    cmp byte[entrada], teclaEscape
+    cmp byte[coord1], teclaEscape
     je Inicio
+
+    ; si la entrada no es ni una coordenada válida, y tampoco la tecla escape, se arroja un error
+    imprimeEnPantalla entradaEquivocada, longEntEq
+    jmp Pedir_Coordenadas
 
 tp4:
     mov edx, 17
@@ -395,18 +469,21 @@ coordenada_2:
     ;dec ecx
     ;add ecx, 2
     leeTeclado
-    cmp byte[entrada], '0'
+    cmp byte[coord2], '0'
     je tp7
    
-    cmp byte[entrada], '1'
+    cmp byte[coord2], '1'
     je tp8
     
-    cmp byte[entrada], '2'
+    cmp byte[coord2], '2'
     je tp9
 
-    cmp byte[entrada], teclaEscape
+    cmp byte[coord2], teclaEscape
     je Inicio
-    
+
+    ; si la entrada no es ni una coordenada válida, y tampoco la tecla escape, se arroja un error
+    imprimeEnPantalla entradaEquivocada, longEntEq
+    jmp Pedir_Coordenadas
 
 tp7:
     mov edx, 33
@@ -453,6 +530,7 @@ printMessage:
 
 
 Casilla_Vacia:
+    inc r8 ; si la casilla estaba vacía, incrementa 1 el r8 porque hubo una colocación en el tablero.
     jmp printMessage
 
 
@@ -462,6 +540,9 @@ Casilla_No_Vacia:
 
     ;imprimeEnPantalla mensajeDebug, longitudDebug
     ;jmp SALIR
+
+perdio:
+    
 
 cerrar_juego:
     imprimeEnPantalla despedida, longDespedida
